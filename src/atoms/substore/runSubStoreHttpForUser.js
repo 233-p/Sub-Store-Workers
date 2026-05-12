@@ -206,7 +206,24 @@ function buildResponseFromSubStoreResult(result) {
     });
 }
 
-async function executeSubStoreRequest({ $request, subStoreContext, requestId, timeoutMs, timeoutLabel }) {
+function isDebugEnabled(env) {
+    return env?.DEBUG === true || env?.DEBUG === 'true';
+}
+
+function buildDebugErrorResult(error, fallbackMessage = 'Internal Server Error') {
+    const message = error?.message || String(error || fallbackMessage);
+    return {
+        status: 500,
+        body: JSON.stringify({
+            status: 'failed',
+            message,
+            stack: error?.stack || null,
+        }),
+        headers: { 'Content-Type': 'application/json' },
+    };
+}
+
+async function executeSubStoreRequest({ $request, subStoreContext, requestId, timeoutMs, timeoutLabel, debugEnabled }) {
     let timeoutId = null;
     return await new Promise((resolve) => {
         subStoreContext.done = (res) => {
@@ -232,7 +249,12 @@ async function executeSubStoreRequest({ $request, subStoreContext, requestId, ti
             if (timeoutId) clearTimeout(timeoutId);
             subStoreContext.done = null;
             logError(`[SubStoreAtom] [${requestId}] initSubStore failed:`, e?.message || e);
-            resolve({ result: { status: 500, body: 'Internal Server Error' }, timedOut: false });
+            resolve({
+                result: debugEnabled
+                    ? buildDebugErrorResult(e)
+                    : { status: 500, body: 'Internal Server Error' },
+                timedOut: false,
+            });
         });
     });
 }
@@ -327,6 +349,7 @@ export async function runSubStoreHttpForUser({ user, env, state, request, subSto
         requestId,
         timeoutMs: 25000,
         timeoutLabel: '请求超时',
+        debugEnabled: isDebugEnabled(env),
     }));
 
     const dataString = flushSubStoreRequestContext(subStoreContext);
@@ -342,25 +365,5 @@ export async function runSubStoreHttpForUser({ user, env, state, request, subSto
         cleanupSubStoreAttempt(attemptId);
     }
 
-    if (env?.DEBUG === true || env?.DEBUG === 'true') {
-    try {
-        const response = result?.response || result;
-        console.log('[DIAG] [SubStoreResult]', JSON.stringify({
-            userId: user?.id,
-            path: $request?.path,
-            status: response?.status,
-            headers: response?.headers || null,
-            body: typeof response?.body === 'string'
-                ? response.body.slice(0, 1000)
-                : response?.body == null
-                    ? null
-                    : String(response.body).slice(0, 1000),
-        }));
-    } catch (e) {
-        console.log('[DIAG] [SubStoreResult] log failed', e?.message || e);
-    }
-}
-
-return buildResponseFromSubStoreResult(result);
-
+    return buildResponseFromSubStoreResult(result);
 }

@@ -26,7 +26,22 @@ export default {
             return addRequestIdHeaderToResponse(response, requestId);
         } catch (err) {
             logError(`[Worker] [${requestId}] unhandled error:`, err?.stack || err?.message || err);
-            const response = new Response('Internal Server Error', { status: 500 });
+            const response = new Response(
+                env?.DEBUG === true || env?.DEBUG === 'true'
+                    ? JSON.stringify({
+                        status: 'failed',
+                        source: 'Worker',
+                        message: err?.message || String(err),
+                        stack: err?.stack || null,
+                    })
+                    : 'Internal Server Error',
+                {
+                    status: 500,
+                    headers: env?.DEBUG === true || env?.DEBUG === 'true'
+                        ? { 'Content-Type': 'application/json' }
+                        : undefined,
+                },
+            );
             return addRequestIdHeaderToResponse(response, requestId);
         }
     },
