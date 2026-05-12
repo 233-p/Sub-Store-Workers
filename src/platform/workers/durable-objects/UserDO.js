@@ -36,14 +36,6 @@ export class UserDO extends DurableObject {
             });
         } catch (err) {
             logError(`[UserDO] [${requestId}] unhandled error:`, err?.message || err);
-            if (this.env?.DEBUG === true || this.env?.DEBUG === 'true') {
-                return errorResponse(JSON.stringify({
-                    status: 'failed',
-                    source: 'UserDO',
-                    message: err?.message || String(err),
-                    stack: err?.stack || null,
-                }), 500);
-            }
             return errorResponse('Internal Server Error', 500);
         }
     }

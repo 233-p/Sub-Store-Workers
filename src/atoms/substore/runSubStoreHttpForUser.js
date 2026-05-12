@@ -206,24 +206,7 @@ function buildResponseFromSubStoreResult(result) {
     });
 }
 
-function isDebugEnabled(env) {
-    return env?.DEBUG === true || env?.DEBUG === 'true';
-}
-
-function buildDebugErrorResult(error, fallbackMessage = 'Internal Server Error') {
-    const message = error?.message || String(error || fallbackMessage);
-    return {
-        status: 500,
-        body: JSON.stringify({
-            status: 'failed',
-            message,
-            stack: error?.stack || null,
-        }),
-        headers: { 'Content-Type': 'application/json' },
-    };
-}
-
-async function executeSubStoreRequest({ $request, subStoreContext, requestId, timeoutMs, timeoutLabel, debugEnabled }) {
+async function executeSubStoreRequest({ $request, subStoreContext, requestId, timeoutMs, timeoutLabel }) {
     let timeoutId = null;
     return await new Promise((resolve) => {
         subStoreContext.done = (res) => {
@@ -249,12 +232,7 @@ async function executeSubStoreRequest({ $request, subStoreContext, requestId, ti
             if (timeoutId) clearTimeout(timeoutId);
             subStoreContext.done = null;
             logError(`[SubStoreAtom] [${requestId}] initSubStore failed:`, e?.message || e);
-            resolve({
-                result: debugEnabled
-                    ? buildDebugErrorResult(e)
-                    : { status: 500, body: 'Internal Server Error' },
-                timedOut: false,
-            });
+            resolve({ result: { status: 500, body: 'Internal Server Error' }, timedOut: false });
         });
     });
 }
@@ -349,7 +327,6 @@ export async function runSubStoreHttpForUser({ user, env, state, request, subSto
         requestId,
         timeoutMs: 25000,
         timeoutLabel: '请求超时',
-        debugEnabled: isDebugEnabled(env),
     }));
 
     const dataString = flushSubStoreRequestContext(subStoreContext);

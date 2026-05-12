@@ -8,7 +8,7 @@ compatibility_flags = ["nodejs_compat"]
 
 # 环境变量
 [vars]
-DEBUG = true
+DEBUG = false
 JWT_SECRET = "__JWT_SECRET__"
 
 # Durable Objects（SQLite）

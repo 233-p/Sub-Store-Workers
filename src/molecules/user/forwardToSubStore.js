@@ -34,26 +34,13 @@ export async function forwardToSubStore({ request, env, state, storage, requestI
 
     const httpEnv = { ...env, __saveUserData: (id, savedFromContext) => saveUserData(id, savedFromContext), __mmdbGateway: mmdbGateway };
 
-    let resp;
-    try {
-        resp = await runSubStoreHttpForUser({
-            user,
-            env: httpEnv,
-            state,
-            request,
-            subStorePath: route.substore.subStorePath,
-        });
-    } catch (e) {
-        if (env?.DEBUG === true || env?.DEBUG === 'true') {
-            return errorResponse(JSON.stringify({
-                status: 'failed',
-                source: 'forwardToSubStore',
-                message: e?.message || String(e),
-                stack: e?.stack || null,
-            }), 500);
-        }
-        throw e;
-    }
+    const resp = await runSubStoreHttpForUser({
+        user,
+        env: httpEnv,
+        state,
+        request,
+        subStorePath: route.substore.subStorePath,
+    });
 
     if (!resp) return errorResponse('Internal Server Error', 500);
 
