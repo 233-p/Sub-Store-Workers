@@ -342,5 +342,25 @@ export async function runSubStoreHttpForUser({ user, env, state, request, subSto
         cleanupSubStoreAttempt(attemptId);
     }
 
-    return buildResponseFromSubStoreResult(result);
+    if (env?.DEBUG === true || env?.DEBUG === 'true') {
+    try {
+        const response = result?.response || result;
+        console.log('[DIAG] [SubStoreResult]', JSON.stringify({
+            userId: user?.id,
+            path: $request?.path,
+            status: response?.status,
+            headers: response?.headers || null,
+            body: typeof response?.body === 'string'
+                ? response.body.slice(0, 1000)
+                : response?.body == null
+                    ? null
+                    : String(response.body).slice(0, 1000),
+        }));
+    } catch (e) {
+        console.log('[DIAG] [SubStoreResult] log failed', e?.message || e);
+    }
+}
+
+return buildResponseFromSubStoreResult(result);
+
 }
