@@ -270,7 +270,7 @@ const tasks = {
                     const after = contents.slice(endIdx);
                     const requiredNeedles = [
                         ['tasks.has(id)', () => chunk.includes('tasks.has(id)')],
-                        ['tasks.set(id, ...)', () => /tasks\.set\(\s*id\s*,/.test(chunk)],
+                        ['tasks.set(id, ...)', () => /tasks\.set\s*\(\s*id\s*,/.test(chunk)],
                         ['const id = hex_md5(', () => chunk.includes('const id = hex_md5(')],
                     ];
                     const missing = requiredNeedles.filter(([, check]) => !check()).map(([label]) => label);
