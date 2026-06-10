@@ -268,8 +268,12 @@ const tasks = {
                     const before = contents.slice(0, startIdx);
                     const chunk = contents.slice(startIdx, endIdx);
                     const after = contents.slice(endIdx);
-                    const requiredNeedles = ['tasks.has(id)', 'tasks.set(id, result)', 'const id = hex_md5('];
-                    const missing = requiredNeedles.filter((n) => !chunk.includes(n));
+                    const requiredNeedles = [
+                        ['tasks.has(id)', () => chunk.includes('tasks.has(id)')],
+                        ['tasks.set(id, ...)', () => /tasks\.set\s*\(\s*id\s*,/.test(chunk)],
+                        ['const id = hex_md5(', () => chunk.includes('const id = hex_md5(')],
+                    ];
+                    const missing = requiredNeedles.filter(([, check]) => !check()).map(([label]) => label);
                     if (missing.length > 0) {
                         this.error(`[sub-store-transform] download.js 结构已变化，补丁未应用：缺少关键片段: ${missing.join(', ')}`);
                     }
@@ -283,6 +287,7 @@ const tasks = {
     awaitCustomCache,
     noCache,
     preprocess,
+    options = {},
 ) {
     let $arguments = {};
     try {
@@ -305,7 +310,7 @@ const tasks = {
     }
 
     if (noCache || ($arguments && $arguments.noCache)) {
-        return await __download_impl__(rawUrl, ua, timeout, customProxy, skipCustomCache, awaitCustomCache, noCache, preprocess);
+        return await __download_impl__(rawUrl, ua, timeout, customProxy, skipCustomCache, awaitCustomCache, noCache, preprocess, options);
     }
 
     const context = globalThis.__substore_get_active_context__?.();
@@ -319,7 +324,7 @@ const tasks = {
     }
     const p = (async () => {
         try {
-            return await __download_impl__(rawUrl, ua, timeout, customProxy, skipCustomCache, awaitCustomCache, noCache, preprocess);
+            return await __download_impl__(rawUrl, ua, timeout, customProxy, skipCustomCache, awaitCustomCache, noCache, preprocess, options);
         } finally {
             globalThis.__sub_store_workers_inflight_tasks__.delete(inflightKey);
         }
